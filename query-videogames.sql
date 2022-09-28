@@ -289,7 +289,7 @@ ORDER BY n_premi DESC
 
 
 --13- Selezionare le categorie dei videogame i quali hanno una media recensioni inferiore a 1.5 (10)
-SELECT DISTINCT categories.name AS categoria, AVG(CAST(reviews.rating AS FLOAT)) AS media_recensioni
+SELECT DISTINCT categories.name AS categoria, AVG(CONVERT(DECIMAL(16,2),reviews.rating)) AS media_recensioni
 FROM videogames
 
 INNER JOIN category_videogame 
@@ -299,8 +299,9 @@ INNER JOIN categories
 ON categories.id = category_videogame.category_id
 
 INNER JOIN reviews 
-ON reviews.id = videogames.id
+ON reviews.videogame_id = videogames.id
 
 GROUP BY categories.name, reviews.videogame_id
 
-HAVING AVG(CAST(reviews.rating AS FLOAT)) < 1.5;
+HAVING AVG(CONVERT(DECIMAL(16,2),reviews.rating)) <= 1.5;
+
