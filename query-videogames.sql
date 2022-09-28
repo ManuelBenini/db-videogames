@@ -107,8 +107,200 @@ GROUP BY device_id;
 SELECT videogame_id, AVG(rating) AS average_rating
 FROM reviews
 GROUP BY videogame_id
-ORDER BY average_rating;
+ORDER BY average_rating DESC;
 
 
 
 -----------------------QUERY CON JOIN-----------------------------
+
+--1- Selezionare i dati di tutti giocatori che hanno scritto almeno una recensione, mostrandoli una sola volta (996)
+SELECT DISTINCT players.*
+FROM players
+INNER JOIN reviews
+ON reviews.player_id = players.id;
+
+
+--2- Sezionare tutti i videogame dei tornei tenuti nel 2016, mostrandoli una sola volta (226)
+SELECT DISTINCT videogames.name
+FROM tournament_videogame
+
+INNER JOIN videogames
+ON videogames.id = tournament_videogame.videogame_id
+
+INNER JOIN tournaments
+ON tournaments.id = tournament_videogame.tournament_id
+
+WHERE tournaments.year = 2016;
+
+
+--3- Mostrare le categorie di ogni videogioco (1718)
+SELECT categories.name AS categoria, videogames.name AS videogioco
+FROM category_videogame
+
+INNER JOIN videogames
+ON videogames.id = category_videogame.videogame_id
+
+INNER JOIN categories
+ON categories.id = category_videogame.category_id
+
+
+--4- Selezionare i dati di tutte le software house che hanno rilasciato almeno un gioco dopo il 2020, mostrandoli una sola volta (6)
+SELECT DISTINCT software_houses.*
+FROM software_houses
+INNER JOIN videogames
+ON videogames.software_house_id = software_houses.id
+WHERE YEAR(videogames.release_date) >= 2020;
+
+
+--5- Selezionare i premi ricevuti da ogni software house per i videogiochi che ha prodotto (55)
+SELECT *
+FROM software_houses
+
+INNER JOIN videogames
+ON videogames.software_house_id = software_houses.id
+
+INNER JOIN award_videogame
+ON award_videogame.videogame_id = videogames.id
+
+INNER JOIN awards
+ON awards.id = award_videogame.award_id
+
+
+--6- Selezionare categorie e classificazioni PEGI dei videogiochi che hanno ricevuto recensioni da 4 e 5 stelle, mostrandole una sola volta (3363)
+SELECT DISTINCT categories.name AS categoria, pegi_labels.name AS pegi, videogames.name AS videogioco
+FROM videogames
+
+INNER JOIN reviews
+ON reviews.videogame_id = videogames.id
+
+INNER JOIN pegi_label_videogame
+ON pegi_label_videogame.videogame_id = videogames.id
+
+INNER JOIN pegi_labels
+ON pegi_label_videogame.pegi_label_id = pegi_labels.id
+
+INNER JOIN category_videogame
+ON category_videogame.videogame_id = videogames.id
+
+INNER JOIN categories
+ON category_videogame.category_id = categories.id
+
+WHERE reviews.rating >= 4 AND reviews.rating <= 5;
+
+
+--7- Selezionare quali giochi erano presenti nei tornei nei quali hanno partecipato i giocatori il cui nome inizia per 'S' (474)
+SELECT DISTINCT videogames.name
+FROM videogames
+
+INNER JOIN tournament_videogame
+ON tournament_videogame.videogame_id = videogames.id
+
+INNER JOIN tournaments
+ON tournament_videogame.tournament_id = tournaments.id
+
+INNER JOIN player_tournament
+ON player_tournament.tournament_id = tournament_videogame.tournament_id
+
+INNER JOIN players
+ON players.id = player_tournament.player_id
+
+WHERE players.name LIKE 'S%';
+
+
+--8- Selezionare le città in cui è stato giocato il gioco dell'anno del 2018 (36)
+SELECT tournaments.city
+FROM tournaments
+
+INNER JOIN tournament_videogame
+ON tournament_videogame.tournament_id = tournaments.id
+
+INNER JOIN videogames
+ON videogames.id = tournament_videogame.videogame_id
+
+INNER JOIN award_videogame
+ON award_videogame.videogame_id = videogames.id
+
+INNER JOIN awards	
+on awards.id = award_videogame.award_id
+
+WHERE award_videogame.year = 2018 AND awards.id = 1;
+
+
+--9- Selezionare i giocatori che hanno giocato al gioco più atteso del 2018 in un torneo del 2019 (3306)
+SELECT players.name
+FROM tournaments
+
+INNER JOIN tournament_videogame
+ON tournament_videogame.tournament_id = tournaments.id
+
+INNER JOIN videogames
+ON videogames.id = tournament_videogame.videogame_id
+
+INNER JOIN award_videogame
+ON award_videogame.videogame_id = videogames.id
+
+INNER JOIN awards	
+on awards.id = award_videogame.award_id
+
+INNER JOIN player_tournament
+ON player_tournament.tournament_id = tournaments.id
+
+INNER JOIN players
+ON players.id = player_tournament.player_id
+
+WHERE tournaments.year = 2019 AND awards.id = 5 AND award_videogame.year = 2018;
+
+
+--10- Selezionare i dati della prima software house che ha rilasciato un gioco, assieme ai dati del gioco stesso (software house id : 5)
+SELECT software_houses.*, videogames.*
+FROM software_houses
+INNER JOIN videogames
+ON videogames.software_house_id = software_houses.id
+WHERE videogames.release_date = (SELECT MIN(videogames.release_date) FROM videogames);
+
+
+--11- Selezionare i dati del videogame (id, name, release_date, totale recensioni) con più recensioni (videogame id : 398)
+SELECT TOP 1 videogames.id, videogames.name AS videogioco, videogames.release_date AS anno_di_uscita, COUNT(reviews.id) AS n_recensioni
+FROM videogames
+INNER JOIN reviews 
+ON videogames.id = reviews.videogame_id
+GROUP BY videogames.id, videogames.name, videogames.release_date
+ORDER BY n_recensioni DESC;
+
+
+--12- Selezionare la software house che ha vinto più premi tra il 2015 e il 2016 (software house id : 1)
+SELECT TOP 1 software_houses.name, COUNT(awards.id) AS n_premi
+FROM software_houses
+
+INNER JOIN videogames 
+ON videogames.software_house_id = software_houses.id
+
+INNER JOIN award_videogame 
+ON award_videogame.videogame_id = videogames.id
+
+INNER JOIN awards 
+ON award_videogame.award_id = awards.id
+
+WHERE award_videogame.year >= 2015 AND award_videogame.year <= 2016
+
+GROUP BY software_houses.name
+
+ORDER BY n_premi DESC
+
+
+--13- Selezionare le categorie dei videogame i quali hanno una media recensioni inferiore a 1.5 (10)
+SELECT DISTINCT categories.name AS categoria, AVG(CAST(reviews.rating AS FLOAT)) AS media_recensioni
+FROM videogames
+
+INNER JOIN category_videogame 
+ON category_videogame.videogame_id = videogames.id
+
+INNER JOIN categories 
+ON categories.id = category_videogame.category_id
+
+INNER JOIN reviews 
+ON reviews.id = videogames.id
+
+GROUP BY categories.name, reviews.videogame_id
+
+HAVING AVG(CAST(reviews.rating AS FLOAT)) < 1.5;
